@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font: var(--font-size-base)/1.45 var(--font-mono);
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      var(--orb-violet),
+      var(--orb-cyan),
+      var(--grid-pattern);
+    background-size: 100% 100%, 100% 100%, var(--grid-size) var(--grid-size);
+    pointer-events: none;
+    z-index: -1;
+  }
+  #app {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-4);
+    background: var(--bg-glass);
+    backdrop-filter: var(--blur-heavy);
+    border-bottom: 1px solid var(--border-glass);
+    z-index: 50;
+    gap: var(--space-3);
+  }
+  .nav-left, .nav-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .brand-mark {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: linear-gradient(var(--bg-glass), var(--bg-glass)) padding-box,
+                linear-gradient(135deg, var(--brand-violet), var(--brand-cyan)) border-box;
+  }
+  .pulse-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--brand-cyan);
+    box-shadow: 0 0 0 0 rgba(125, 211, 252, 0.4);
+    animation: pulse 2s infinite;
+  }
+  .pulse-dot.mint {
+    background: var(--status-success);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(125, 211, 252, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(125, 211, 252, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(125, 211, 252, 0); }
+  }
+  .brand-text {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--font-size-lg);
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--brand-violet), var(--brand-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .nav-tabs {
+    display: flex;
+    align-items: center;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-full);
+    padding: var(--space-1);
+    gap: var(--space-1);
+  }
+  .tab {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font: 500 var(--font-size-sm) var(--font-mono);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    letter-spacing: 0.02em;
+  }
+  .tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .tab.active {
+    background: var(--text-primary);
+    color: var(--bg-base);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  .nav-right {
+    min-width: 220px;
+    justify-content: flex-end;
+  }
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-full);
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+  }
+  .clock {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  main {
+    margin-top: 64px;
+    padding: var(--space-4);
+    flex: 1;
+    display: none;
+  }
+  main.active {
+    display: block;
+  }
+  .panel-placeholder {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    text-align: center;
+    padding: var(--space-6) 0;
+  }
+  .placeholder {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    text-align: center;
+    padding: var(--space-6) 0;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module" src="components.js"></script>
+<script type="module">
+  import { GlassCard, Badge } from './components.js';
+
+  const tabs = ['Overview', 'Agents', 'Tasks', 'Schedule', 'Content'];
+
+  function buildShell() {
+    const app = document.getElementById('app');
+
+    // Navbar
+    const nav = document.createElement('nav');
+    nav.className = 'navbar';
+    nav.innerHTML = `
+      <div class="nav-left">
+        <div class="brand-mark">
+          <div class="pulse-dot"></div>
+          <div class="ring"></div>
+        </div>
+        <span class="brand-text">Hermes</span>
+        ${Badge({ text: 'v1.0', color: 'var(--text-muted)', variant: 'subtle' })}
+      </div>
+      <div class="nav-tabs">
+        ${tabs.map((tab, i) => `
+          <button class="tab ${i === 0 ? 'active' : ''}" data-tab="${tab.toLowerCase()}">${tab}</button>
+        `).join('')}
+      </div>
+      <div class="nav-right">
+        <div class="status-pill">
+          <span class="pulse-dot mint"></span>
+          <span>All systems operational</span>
+          <span class="clock"></span>
+        </div>
+      </div>
+    `;
+
+    // Main panels
+    const main = document.createElement('main');
+    main.id = 'main';
+    tabs.forEach((tab, i) => {
+      const section = document.createElement('section');
+      section.id = `tab-${tab.toLowerCase()}`;
+      section.className = `${i === 0 ? 'active' : ''}`;
+      if (tab === 'Content') {
+        section.innerHTML = '<div class="placeholder">Content tab — coming soon</div>';
+      } else {
+        section.innerHTML = GlassCard({
+          children: `<div class="panel-placeholder">${tab} panel content loads here</div>`
+        });
+      }
+      main.appendChild(section);
+    });
+
+    app.appendChild(nav);
+    app.appendChild(main);
+
+    // Tab switching
+    const tabButtons = nav.querySelectorAll('.tab');
+    const panels = main.querySelectorAll('section');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        panels.forEach(p => p.classList.remove('active'));
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // Clock
+    const clockEl = nav.querySelector('.clock');
+    const update = () => {
+      const now = new Date();
+      clockEl.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+    };
+    update();
+    setInterval(update, 1000);
+  }
+
+  buildShell();
+</script>
+</body>
+</html>

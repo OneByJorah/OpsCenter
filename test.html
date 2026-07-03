@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><title>Dashboard Diagnostics</title></head>
+<body>
+<h1>API Test</h1>
+<pre id="out"></pre>
+<script>
+async function test() {
+  const out = document.getElementById('out');
+  const endpoints = ['/api/snapshot', '/api/board', '/api/content'];
+  for (const ep of endpoints) {
+    try {
+      const r = await fetch(ep);
+      const t = await r.text();
+      out.textContent += `${ep}: ${r.status} (${t.length} bytes)\n`;
+    } catch (e) {
+      out.textContent += `${ep}: ERROR ${e.message}\n`;
+    }
+  }
+}
+test();
+</script>
+</body>
+</html>
