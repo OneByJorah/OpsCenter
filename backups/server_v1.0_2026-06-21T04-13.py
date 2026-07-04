@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
-import os, json, sqlite3, time, socketserver
-from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
+import os
+import socketserver
+import sqlite3
+import time
 from datetime import datetime, timezone
+from http.server import BaseHTTPRequestHandler
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-HERMES_HOME = os.environ.get('HERMES_HOME', '/home/j1admin/.hermes')
-BOARD_DB = os.path.join(PROJECT_DIR, 'board.db')
-GATEWAY_STATE = os.path.join(HERMES_HOME, 'gateway_state.json')
-AGENT_LOGS = os.path.join(HERMES_HOME, 'agent-logs.db')
-STATE_DB = os.path.join(HERMES_HOME, 'state.db')
+HERMES_HOME = os.environ.get("HERMES_HOME", "/home/j1admin/.hermes")
+BOARD_DB = os.path.join(PROJECT_DIR, "board.db")
+GATEWAY_STATE = os.path.join(HERMES_HOME, "gateway_state.json")
+AGENT_LOGS = os.path.join(HERMES_HOME, "agent-logs.db")
+STATE_DB = os.path.join(HERMES_HOME, "state.db")
 PORT = 51763
-BIND = '127.0.0.1'
+BIND = "127.0.0.1"
 
 os.makedirs(PROJECT_DIR, exist_ok=True)
 
@@ -33,23 +37,23 @@ def safe(func, fallback=None):
 
 def gateway_data():
     try:
-        with open(GATEWAY_STATE, 'r') as f:
+        with open(GATEWAY_STATE, "r") as f:
             data = json.load(f)
         platform_statuses = {}
-        for pname, pdata in data.get('platforms', {}).items():
+        for pname, pdata in data.get("platforms", {}).items():
             platform_statuses[pname] = {
-                "updated_at": pdata.get('updated_at'),
-                "last_error": pdata.get('last_error')
+                "updated_at": pdata.get("updated_at"),
+                "last_error": pdata.get("last_error"),
             }
         return {
-            "pid": data.get('pid'),
-            "kind": data.get('kind'),
-            "active_agents": data.get('active_agents', 0),
+            "pid": data.get("pid"),
+            "kind": data.get("kind"),
+            "active_agents": data.get("active_agents", 0),
             "platforms": platform_statuses,
-            "restart_requested": data.get('restart_requested', False),
-            "exit_reason": data.get('exit_reason'),
-            "start_time": data.get('start_time'),
-            "updated_at": data.get('updated_at'),
+            "restart_requested": data.get("restart_requested", False),
+            "exit_reason": data.get("exit_reason"),
+            "start_time": data.get("start_time"),
+            "updated_at": data.get("updated_at"),
         }
     except Exception as e:
         return {"error": str(e)}
@@ -63,7 +67,7 @@ def activity_data():
         c = conn.cursor()
         c.execute("SELECT id, agent_name, task_description, model_used, status, created_at FROM agent_logs ORDER BY created_at DESC, id DESC LIMIT 50")
         rows = c.fetchall()
-        cols = ['id', 'agent', 'task', 'model', 'status', 'created_at']
+        cols = ["id", "agent", "task", "model", "status", "created_at"]
         entries = [dict(zip(cols, r)) for r in rows]
 
         c.execute("""
@@ -77,7 +81,7 @@ def activity_data():
             GROUP BY agent_name
         """)
         agent_rows = c.fetchall()
-        agents = [dict(zip(['name','total','completed','failed','last_task','last_seen'], r)) for r in agent_rows]
+        agents = [dict(zip(["name","total","completed","failed","last_task","last_seen"], r)) for r in agent_rows]
 
         c.execute("""
             SELECT COUNT(*) AS total,
@@ -98,7 +102,7 @@ def activity_data():
             GROUP BY DATE(substr(created_at,1,10))
             ORDER BY day DESC
         """)
-        daily = [dict(zip(['day','count','completed','failed'], r)) for r in c.fetchall()]
+        daily = [dict(zip(["day","count","completed","failed"], r)) for r in c.fetchall()]
 
         conn.close()
         return {"entries": entries, "agents": agents, "totals": totals, "daily": daily}
@@ -131,7 +135,7 @@ def sessions_data():
             FROM sessions s
             ORDER BY s.started_at DESC LIMIT 25
         """)
-        recent = [dict(zip(['id','model','started_at','ended_at','message_count','input_tokens','output_tokens','cost_status'], r)) for r in c.fetchall()]
+        recent = [dict(zip(["id","model","started_at","ended_at","message_count","input_tokens","output_tokens","cost_status"], r)) for r in c.fetchall()]
         conn.close()
         return {"totals": totals, "recent_sessions": recent}
     return safe(_run)
@@ -140,7 +144,7 @@ def sessions_data():
 def vps_health():
     def _run():
         def cpu_times():
-            with open('/proc/stat') as f:
+            with open("/proc/stat") as f:
                 parts = f.readline().split()
             vals = list(map(int, parts[1:]))
             idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
@@ -154,24 +158,24 @@ def vps_health():
         cpu_pct = round((1 - idle_d / total_d) * 100, 1) if total_d > 0 else 0.0
 
         meminfo = {}
-        with open('/proc/meminfo') as f:
+        with open("/proc/meminfo") as f:
             for line in f:
-                if ':' in line:
-                    k, v = line.split(':', 1)
+                if ":" in line:
+                    k, v = line.split(":", 1)
                     meminfo[k.strip()] = int(v.strip().split()[0])
-        mem_total = meminfo.get('MemTotal', 0)
-        mem_avail = meminfo.get('MemAvailable', 0)
+        mem_total = meminfo.get("MemTotal", 0)
+        mem_avail = meminfo.get("MemAvailable", 0)
         mem_used = mem_total - mem_avail
         mem_pct = round(mem_used / mem_total * 100, 1) if mem_total else 0.0
 
-        st = os.statvfs('/')
+        st = os.statvfs("/")
         disk_total = st.f_blocks * st.f_frsize
         disk_free = st.f_bfree * st.f_frsize
         disk_used = disk_total - disk_free
         disk_pct = round(disk_used / disk_total * 100, 1) if disk_total else 0.0
 
         def fmt(b):
-            for u in ['B','KB','MB','GB','TB']:
+            for u in ["B","KB","MB","GB","TB"]:
                 if abs(b) < 1024:
                     return f"{b:.1f} {u}"
                 b /= 1024
@@ -195,19 +199,19 @@ def _translate_schedule(parts):
         return " ".join(parts)
     minute, hour, dom, month, dow = parts[0], parts[1], parts[2], parts[3], parts[4]
     pieces = []
-    if minute == '*':
+    if minute == "*":
         pieces.append("every minute")
     else:
         pieces.append(f"at minute {minute}")
-    if hour == '*':
+    if hour == "*":
         pieces.append("every hour")
     else:
         pieces.append(f"hour {hour}")
-    if dom != '*':
+    if dom != "*":
         pieces.append(f"day-of-month {dom}")
-    if month != '*':
+    if month != "*":
         pieces.append(f"month {month}")
-    if dow != '*':
+    if dow != "*":
         pieces.append(f"day-of-week {dow}")
     return ", ".join(pieces)
 
@@ -223,42 +227,42 @@ def cron_jobs():
                 "label": "system" if user == "root" else "hermes",
             })
         try:
-            with open('/etc/crontab') as f:
+            with open("/etc/crontab") as f:
                 for line in f:
                     line = line.strip()
-                    if not line or line.startswith('#'):
+                    if not line or line.startswith("#"):
                         continue
                     parts = line.split()
                     if len(parts) >= 7:
-                        add('/etc/crontab', parts[:5], parts[5], " ".join(parts[6:]))
+                        add("/etc/crontab", parts[:5], parts[5], " ".join(parts[6:]))
         except Exception as e:
             jobs.append({"error": f"/etc/crontab: {e}"})
 
         try:
-            for fname in sorted(os.listdir('/etc/cron.d')):
-                fpath = os.path.join('/etc/cron.d', fname)
+            for fname in sorted(os.listdir("/etc/cron.d")):
+                fpath = os.path.join("/etc/cron.d", fname)
                 if not os.path.isfile(fpath):
                     continue
                 with open(fpath) as f:
                     for line in f:
                         line = line.strip()
-                        if not line or line.startswith('#'):
+                        if not line or line.startswith("#"):
                             continue
                         parts = line.split()
                         if len(parts) >= 6:
-                            add(f'/etc/cron.d/{fname}', parts[:5], parts[5], " ".join(parts[6:]))
+                            add(f"/etc/cron.d/{fname}", parts[:5], parts[5], " ".join(parts[6:]))
         except Exception as e:
             jobs.append({"error": f"/etc/cron.d: {e}"})
 
         try:
-            with open('/var/spool/cron/crontabs/root') as f:
+            with open("/var/spool/cron/crontabs/root") as f:
                 for line in f:
                     line = line.strip()
-                    if not line or line.startswith('#'):
+                    if not line or line.startswith("#"):
                         continue
                     parts = line.split()
                     if len(parts) >= 6:
-                        add('/var/spool/cron/crontabs/root', parts[:5], 'root', " ".join(parts[5:]))
+                        add("/var/spool/cron/crontabs/root", parts[:5], "root", " ".join(parts[5:]))
         except Exception as e:
             jobs.append({"error": f"/var/spool/cron/crontabs/root: {e}"})
 
@@ -320,17 +324,17 @@ def get_board():
 def create_task(data):
     def _run():
         import uuid
-        task_id = data.get('id') or str(uuid.uuid4())[:8]
-        title = data.get('title') or 'Untitled'
-        status = data.get('status') or 'pending'
-        priority = data.get('priority') or 'medium'
-        notes = data.get('notes') or ''
+        task_id = data.get("id") or str(uuid.uuid4())[:8]
+        title = data.get("title") or "Untitled"
+        status = data.get("status") or "pending"
+        priority = data.get("priority") or "medium"
+        notes = data.get("notes") or ""
         now = datetime.now(timezone.utc).isoformat()
         conn = _board_conn()
         c = conn.cursor()
         c.execute(
             "INSERT OR REPLACE INTO tasks (id,title,status,priority,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?)",
-            (task_id, title, status, priority, notes, now, now)
+            (task_id, title, status, priority, notes, now, now),
         )
         conn.commit()
         conn.close()
@@ -340,11 +344,11 @@ def create_task(data):
 
 def update_task(task_id, data):
     def _run():
-        allowed = {'title', 'status', 'priority', 'notes'}
+        allowed = {"title", "status", "priority", "notes"}
         updates = {k: v for k, v in data.items() if k in allowed}
         if not updates:
             return {"error": "No valid fields to update"}
-        updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         values = list(updates.values()) + [task_id]
         conn = _board_conn()
@@ -386,38 +390,38 @@ def boards_delete(task_id):
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         static_map = {
-            '/components.js': 'application/javascript; charset=utf-8',
-            '/app.js': 'application/javascript; charset=utf-8',
-            '/tokens.css': 'text/css; charset=utf-8',
+            "/components.js": "application/javascript; charset=utf-8",
+            "/app.js": "application/javascript; charset=utf-8",
+            "/tokens.css": "text/css; charset=utf-8",
         }
         if self.path in static_map:
-            self.serve_static(os.path.join(PROJECT_DIR, self.path.lstrip('/')), static_map[self.path])
+            self.serve_static(os.path.join(PROJECT_DIR, self.path.lstrip("/")), static_map[self.path])
             return
-        if self.path == '/':
+        if self.path == "/":
             try:
-                with open(os.path.join(PROJECT_DIR, 'index.html'), 'rb') as f:
+                with open(os.path.join(PROJECT_DIR, "index.html"), "rb") as f:
                     content = f.read()
                 self.send_response(200)
-                self.send_header('Content-Type', 'text/html; charset=utf-8')
-                self.send_header('Content-Length', str(len(content)))
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(content)))
                 self.end_headers()
                 self.wfile.write(content)
             except Exception as e:
                 self.send_error(500, f"index.html missing: {e}")
-        elif self.path == '/tokens.css':
-            self.serve_static(os.path.join(PROJECT_DIR, 'tokens.css'), 'text/css; charset=utf-8')
-        elif self.path == '/api/snapshot':
+        elif self.path == "/tokens.css":
+            self.serve_static(os.path.join(PROJECT_DIR, "tokens.css"), "text/css; charset=utf-8")
+        elif self.path == "/api/snapshot":
             payload = json.dumps(self.snapshot()).encode()
             self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Content-Length', str(len(payload)))
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
             self.wfile.write(payload)
-        elif self.path == '/events':
+        elif self.path == "/events":
             self.send_response(200)
-            self.send_header('Content-Type', 'text/event-stream')
-            self.send_header('Cache-Control', 'no-cache')
-            self.send_header('Connection', 'keep-alive')
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
             self.end_headers()
             try:
                 while True:
@@ -430,18 +434,18 @@ class Handler(BaseHTTPRequestHandler):
                     time.sleep(5)
             except Exception:
                 pass
-        elif self.path == '/api/board':
+        elif self.path == "/api/board":
             self._send_json(get_board())
         else:
             self.send_error(404)
 
     def serve_static(self, path, ctype):
         try:
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 data = f.read()
             self.send_response(200)
-            self.send_header('Content-Type', ctype)
-            self.send_header('Content-Length', str(len(data)))
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
         except Exception as e:
@@ -449,27 +453,27 @@ class Handler(BaseHTTPRequestHandler):
 
     def serve_static(self, path, ctype):
         try:
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 data = f.read()
             self.send_response(200)
-            self.send_header('Content-Type', ctype)
-            self.send_header('Content-Length', str(len(data)))
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
         except Exception as e:
             self.send_error(404, str(e))
 
     def do_POST(self):
-        length = int(self.headers.get('Content-Length', 0))
-        body = self.rfile.read(length) if length else b''
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length) if length else b""
         data = json.loads(body) if body else {}
-        if self.path.startswith('/api/board/update?id='):
-            task_id = self.path.split('=', 1)[1]
+        if self.path.startswith("/api/board/update?id="):
+            task_id = self.path.split("=", 1)[1]
             self._send_json(update_task(task_id, data))
-        elif self.path.startswith('/api/board/delete?id='):
-            task_id = self.path.split('=', 1)[1]
+        elif self.path.startswith("/api/board/delete?id="):
+            task_id = self.path.split("=", 1)[1]
             self._send_json(delete_task(task_id))
-        elif self.path == '/api/board':
+        elif self.path == "/api/board":
             self._send_json(create_task(data))
         else:
             self.send_error(404)
@@ -477,8 +481,8 @@ class Handler(BaseHTTPRequestHandler):
     def _send_json(self, obj):
         payload = json.dumps(obj).encode()
         self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Content-Length', str(len(payload)))
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
 
@@ -505,5 +509,5 @@ def run():
         httpd.serve_forever()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()
