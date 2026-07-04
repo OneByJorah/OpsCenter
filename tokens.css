@@ -57,3 +57,7 @@
   --grid-pattern: radial-gradient(circle, rgba(255,255,255,0.02) 1px, transparent 1px);
   --grid-size: 24px;
 }
+
+/* Tab switching — only show active section */
+main > section { display: none !important; }
+main > section.active { display: block !important; }

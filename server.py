@@ -322,7 +322,7 @@ def cron_jobs():
 
 
 # ---------- content (.md files under HERMES_HOME/content/) ----------
-CONTENT_DIR = '/root/.hermes/content'
+CONTENT_DIR = '/home/j1admin/.hermes/content'
 
 def _safe_content_path(raw):
     p = os.path.normpath(os.path.join(CONTENT_DIR, raw or ''))

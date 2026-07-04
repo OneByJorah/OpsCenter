@@ -37,12 +37,15 @@ export const ProgressBar = ({ pct, color = 'var(--brand-cyan)', height = '6px' }
   </div>
 `;
 
-export const ThinBar = ({ pct, color }) => `
+export const ThinBar = ({ pct, color }) => {
+  const values = Array.isArray(pct) ? pct : [pct];
+  return `
   <div style="display: flex; gap: 2px; align-items: flex-end; height: 32px;">
-    ${pct.reverse().map((v, i) => `<div style="width: calc(100% / 7 - 2px); height: ${Math.max(2, v * 0.32)}px; background: ${color}; border-radius: var(--radius-sm); opacity: ${v > 0 ? 0.85 : 0.15};"></div>`).join('')}
+    ${values.map((v, i) => `<div style="width: calc(100% / 7 - 2px); height: ${Math.max(2, v * 0.32)}px; background: ${color}; border-radius: var(--radius-sm); opacity: ${v > 0 ? 0.85 : 0.15};"></div>
+    `).join('')}
   </div>
 `;
-
+};
 export const DonutChart = ({ slices, total }) => {
   if (total === 0) return '<canvas style="width:130px;height:130px"></canvas>';
   let currentAngle = -Math.PI / 2;

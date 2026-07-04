@@ -550,8 +550,16 @@ function columnHTML(status, tasks) {
   `;
 }
 function buildTasks() {
+  return `
+    <div class="board" id="board-root">
+      ${STATUS_FLOW.map(s => columnHTML(s, boardTasks.filter(t => (t.status || 'pending') === s))).join('')}
+    </div>
+    <div id="modal-root"></div>
+  `;
+}
+function initTaskListeners() {
   const board = document.getElementById('board-root');
-  if (!board) return '';
+  if (!board) return;
   board.addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act], button[data-add]');
     if (!btn) return;
@@ -579,12 +587,6 @@ function buildTasks() {
       finally { await refreshBoard(); renderBoard(); }
     }
   });
-  return `
-    <div class="board" id="board-root">
-      ${STATUS_FLOW.map(s => columnHTML(s, boardTasks.filter(t => (t.status || 'pending') === s))).join('')}
-    </div>
-    <div id="modal-root"></div>
-  `;
 }
 function renderTasksTab(data) {
   currentData = data;
@@ -619,12 +621,13 @@ function buildShell() {
       `).join('')}
     </div>
     <div class="nav-right">
-      <div class="status-pill" id="status">
-        <span class="pulse-dot mint"></span>
-        <span>All systems operational</span>
-        <span class="clock"></span>
-      </div>
-    </div>
+          <a href="http://100.66.142.21:9500" target="_blank" class="btn-primary" style="text-decoration:none;font-size:11px;letter-spacing:0.06em;">⛁ NOC</a>
+          <div class="status-pill" id="status">
+            <span class="pulse-dot mint"></span>
+            <span>All systems operational</span>
+            <span class="clock"></span>
+          </div>
+        </div>`;
   `;
   const main = document.createElement('main');
   main.id = 'main';
@@ -652,7 +655,10 @@ function buildShell() {
       btn.classList.add('active');
       panels.forEach(p => p.classList.remove('active'));
       document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      if (btn.dataset.tab === 'overview') renderOverview(currentData);
+      if (btn.dataset.tab === 'agents') renderAgentsTab(currentData);
       if (btn.dataset.tab === 'tasks') renderBoard();
+      if (btn.dataset.tab === 'schedule') renderScheduleTab(currentData);
       if (btn.dataset.tab === 'content') renderContentTab();
       if (btn.dataset.tab === 'office') renderOfficeTab();
     });
@@ -729,6 +735,7 @@ function refresh() {
 }
 function init() {
   buildShell();
+  initTaskListeners();
   refreshBoard().then(() => {
     refresh();
     try {
