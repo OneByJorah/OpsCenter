@@ -18,5 +18,14 @@ dist/
 build/
 *.egg-info/
 *.so
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Backups
+backups/
+
 # Logs
 *.log
+*.log.*

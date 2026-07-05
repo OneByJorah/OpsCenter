@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-HERMES_HOME = os.environ.get("HERMES_HOME", "/home/j1admin/.hermes")
+HERMES_HOME = os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes"))
 BOARD_DB = os.path.join(PROJECT_DIR, "board.db")
 GATEWAY_STATE = os.path.join(HERMES_HOME, "gateway_state.json")
 AGENT_LOGS = os.path.join(HERMES_HOME, "agent-logs.db")
@@ -331,7 +331,7 @@ def cron_jobs():
 
 
 # ---------- content (.md files under HERMES_HOME/content/) ----------
-CONTENT_DIR = "/root/.hermes/content"
+CONTENT_DIR = os.path.join(os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes")), "content")
 
 def _safe_content_path(raw):
     p = os.path.normpath(os.path.join(CONTENT_DIR, raw or ""))
