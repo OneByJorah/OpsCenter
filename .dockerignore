@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+__pycache__/
+*.pyc
+*.db
+*.log
+.idea/
+.vscode/
+.DS_Store
+.github/
+backups/
+README.md
+CONTRIBUTING.md
+AUDIT_REPORT.md
