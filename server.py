@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 import json
+import logging
 import os
 import socketserver
 import sqlite3
+import sys
 import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-HERMES_HOME = os.environ.get("HERMES_HOME", "/home/j1admin/.hermes")
+HERMES_HOME = os.environ.get("HERMES_HOME", os.path.join(PROJECT_DIR, "..", ".hermes"))
 BOARD_DB = os.path.join(PROJECT_DIR, "board.db")
 GATEWAY_STATE = os.path.join(HERMES_HOME, "gateway_state.json")
 AGENT_LOGS = os.path.join(HERMES_HOME, "agent-logs.db")
 STATE_DB = os.path.join(HERMES_HOME, "state.db")
-PORT = 51763
-BIND = "0.0.0.0"
+PORT = int(os.environ.get("PORT", 51763))
+BIND = os.environ.get("BIND", "127.0.0.1")
+API_KEY = os.environ.get("MISSION_CONTROL_API_KEY", "")
 
 # Threshold constants
 _KB = 1024
@@ -22,6 +25,14 @@ _FIVE_MINUTES = 300
 _ONE_HOUR = 3600
 
 os.makedirs(PROJECT_DIR, exist_ok=True)
+
+# ===== LOGGING =====
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger(__name__)
 
 
 def db_ro(path):
@@ -235,23 +246,23 @@ def _parse_dt(s):
     except Exception:
         return None
 
-def _is_active(ts):
+def _is_active(ts, now_dt):
     dt = _parse_dt(ts)
     if not dt:
         return False
-    return (now - dt).total_seconds() < _FIVE_MINUTES
+    return (now_dt - dt).total_seconds() < _FIVE_MINUTES
 
-def _is_idle(ts):
+def _is_idle(ts, now_dt):
     dt = _parse_dt(ts)
     if not dt:
         return False
-    return (now - dt).total_seconds() < _ONE_HOUR
+    return (now_dt - dt).total_seconds() < _ONE_HOUR
 
-def _is_dormant(ts):
+def _is_dormant(ts, now_dt):
     dt = _parse_dt(ts)
     if not dt:
         return True
-    return (now - dt).total_seconds() >= _ONE_HOUR
+    return (now_dt - dt).total_seconds() >= _ONE_HOUR
 
 def _translate_schedule(parts):
     if len(parts) < 5:
@@ -331,7 +342,7 @@ def cron_jobs():
 
 
 # ---------- content (.md files under HERMES_HOME/content/) ----------
-CONTENT_DIR = "/root/.hermes/content"
+CONTENT_DIR = os.environ.get("MISSION_CONTROL_CONTENT_DIR", os.path.join(PROJECT_DIR, "content"))
 
 def _safe_content_path(raw):
     p = os.path.normpath(os.path.join(CONTENT_DIR, raw or ""))
@@ -553,18 +564,21 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache")
             self.send_header("Connection", "keep-alive")
+            self.send_header("X-Accel-Buffering", "no")
             self.end_headers()
+            self.request.settimeout(1.0)
             try:
                 while True:
                     payload = json.dumps(self.snapshot()).encode()
                     self.wfile.write(f"data: {payload}\n\n".encode())
-                    try:
-                        self.wfile.flush()
-                    except Exception:
-                        break
+                    self.wfile.flush()
                     time.sleep(5)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
             except Exception:
                 pass
+            finally:
+                self.request.settimeout(None)
         elif self.path == "/api/board":
             self._send_json(get_board())
         elif self.path == "/api/content":
@@ -587,19 +601,17 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(404, str(e))
 
-    def serve_static(self, path, ctype):
-        try:
-            with open(path, "rb") as f:
-                data = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", ctype)
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-        except Exception as e:
-            self.send_error(404, str(e))
-
     def do_POST(self):
+        if API_KEY:
+            request_key = self.headers.get("X-API-Key", "")
+            if request_key != API_KEY:
+                self.send_response(403)
+                self.send_header("Content-Type", "application/json")
+                payload = b'{"error":"Forbidden: valid X-API-Key required"}'
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else b""
         data = json.loads(body) if body else {}
@@ -625,16 +637,17 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def snapshot(self):
-        now = datetime.now(timezone.utc).isoformat()
+        now_dt = datetime.now(timezone.utc)
+        now_iso = now_dt.isoformat()
         def agent_status_counts():
             act = safe(activity_data) or {}
             agents = act.get("agents", [])
-            active = sum(1 for a in agents if _is_active(a.get("last_seen")))
-            idle = sum(1 for a in agents if _is_idle(a.get("last_seen")))
-            dormant = sum(1 for a in agents if _is_dormant(a.get("last_seen")))
+            active = sum(1 for a in agents if _is_active(a.get("last_seen"), now_dt))
+            idle = sum(1 for a in agents if _is_idle(a.get("last_seen"), now_dt))
+            dormant = sum(1 for a in agents if _is_dormant(a.get("last_seen"), now_dt))
             return {"active": active, "idle": idle, "dormant": dormant}
         return {
-            "t": now,
+            "t": now_iso,
             "gateway": safe(gateway_data),
             "activity": safe(activity_data),
             "sessions": safe(sessions_data),
@@ -646,7 +659,7 @@ class Handler(BaseHTTPRequestHandler):
         }
 
     def log_message(self, format, *args):
-        pass
+        logger.info("%s - %s" % (self.client_address[0], format % args))
 
 
 def run():
