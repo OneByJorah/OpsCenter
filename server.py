@@ -587,18 +587,6 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(404, str(e))
 
-    def serve_static(self, path, ctype):
-        try:
-            with open(path, "rb") as f:
-                data = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", ctype)
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-        except Exception as e:
-            self.send_error(404, str(e))
-
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else b""
