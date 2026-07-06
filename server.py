@@ -235,19 +235,19 @@ def _parse_dt(s):
     except Exception:
         return None
 
-def _is_active(ts):
+def _is_active(ts, now):
     dt = _parse_dt(ts)
     if not dt:
         return False
     return (now - dt).total_seconds() < _FIVE_MINUTES
 
-def _is_idle(ts):
+def _is_idle(ts, now):
     dt = _parse_dt(ts)
     if not dt:
         return False
     return (now - dt).total_seconds() < _ONE_HOUR
 
-def _is_dormant(ts):
+def _is_dormant(ts, now):
     dt = _parse_dt(ts)
     if not dt:
         return True
@@ -629,9 +629,9 @@ class Handler(BaseHTTPRequestHandler):
         def agent_status_counts():
             act = safe(activity_data) or {}
             agents = act.get("agents", [])
-            active = sum(1 for a in agents if _is_active(a.get("last_seen")))
-            idle = sum(1 for a in agents if _is_idle(a.get("last_seen")))
-            dormant = sum(1 for a in agents if _is_dormant(a.get("last_seen")))
+            active = sum(1 for a in agents if _is_active(a.get("last_seen"), now))
+            idle = sum(1 for a in agents if _is_idle(a.get("last_seen"), now))
+            dormant = sum(1 for a in agents if _is_dormant(a.get("last_seen"), now))
             return {"active": active, "idle": idle, "dormant": dormant}
         return {
             "t": now,
