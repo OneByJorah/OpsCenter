@@ -27,7 +27,7 @@
 - **Session Tracking** — Historical log of agent sessions and outcomes
 - **Token Analytics** — Usage tracking and cost monitoring for LLM calls
 - **System Health** — Server resource monitoring and alerting
-- **WebSocket Updates** — Live streaming of agent state changes
+- **SSE Updates** — Live streaming of agent state changes via Server-Sent Events
 - **Dark-Themed UI** — Professional, easy-on-the-eyes operations interface
 
 ## 🚀 Quick Start
@@ -35,11 +35,12 @@
 ```bash
 git clone https://github.com/OneByJorah/agent-mission-control.git
 cd agent-mission-control
-pip install -r requirements.txt
 python3 server.py
 ```
 
-Open **http://localhost:8080** in your browser.
+Open **http://localhost:51763** in your browser.
+
+> **Note:** The server uses only Python stdlib — no pip dependencies required. The `pip install -r requirements.txt` step is unnecessary.
 
 ### Using Start Script
 
@@ -51,7 +52,7 @@ chmod +x start.sh
 ## 🏗️ Architecture
 
 ```
-Browser (HTML/JS) ──WebSocket──▶ Python Server ──▶ SQLite
+Browser (HTML/JS) ──SSE──▶ Python Server ──▶ SQLite
                                       │
                                       ▼
                               Hermes Gateway API
@@ -78,10 +79,14 @@ agent-mission-control/
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | Main dashboard UI |
-| `/api/agents` | GET | List active agents |
-| `/api/tasks` | GET/POST | Task management |
-| `/api/sessions` | GET | Session history |
-| `/api/health` | GET | System health status |
+| `/api/snapshot` | GET | Full system snapshot (gateway, activity, sessions, VPS, cron, board, DBs) |
+| `/events` | GET | SSE stream — pushes snapshot every 5s |
+| `/api/board` | GET/POST | Task board CRUD |
+| `/api/board/update?id=` | POST | Update task status/fields |
+| `/api/board/delete?id=` | POST | Delete a task |
+| `/api/content` | GET | List content documents |
+| `/api/content/get?path=` | GET | Get content document body |
+| `/api/content/save` | POST | Save/update content document |
 
 ## 🔌 Integrations
 
