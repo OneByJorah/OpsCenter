@@ -1,31 +1,42 @@
-
 :root {
-  --bg-base: #15151F;
-  --bg-glass: rgba(31,31,43,0.55);
-  --border-glass: rgba(255,255,255,0.1);
-  --text-primary: #F4F4F8;
-  --text-muted: #8A8A9B;
-  --brand-violet: #8B5CF6;
-  --brand-violet-glow: #A78BFA;
-  --brand-cyan: #7DD3FC;
-  --brand-mint: #5EE2B5;
-  --brand-amber: #F5B544;
-  --brand-red: #F26D6D;
-  --brand-pink: #F472B6;
-  --brand-gold: #FBBF24;
-  --brand-magenta: #E879F9;
-  --brand-teal: #2DD4BF;
-  --agent-orchestrator: var(--brand-violet-glow);
-  --agent-analyst: var(--brand-cyan);
-  --agent-writer: var(--brand-pink);
-  --agent-marketer: var(--brand-magenta);
-  --agent-coder: var(--brand-teal);
-  --status-active: var(--brand-mint);
-  --status-idle: var(--brand-amber);
-  --status-dormant: var(--text-muted);
-  --status-success: var(--brand-mint);
-  --status-error: var(--brand-red);
-  --status-warning: var(--brand-amber);
+  /* === CYBERPUNK DESIGN SYSTEM === */
+  --bg-deep: #05080f;
+  --bg-base: #05080f;
+  --bg-glass: rgba(5,8,15,0.75);
+  --glass-bg: rgba(5,8,15,0.75);
+  --border-glass: rgba(255,179,0,0.14);
+  --glass-border: rgba(0,229,255,0.12);
+  --text-primary: #e8f4ff;
+  --text-muted: #6b8fa3;
+
+  --brand-cyan: #00e5ff;
+  --brand-magenta: #ff0080;
+  --brand-amber: #ffb300;
+  --brand-primary: #ffb300;
+  --brand-violet: #00e5ff;
+  --brand-violet-glow: #00e5ff;
+  --brand-mint: #00e5ff;
+  --brand-red: #ff0080;
+  --brand-pink: #ff0080;
+  --brand-gold: #ffb300;
+  --brand-teal: #00e5ff;
+
+  --glow-cyan: 0 0 20px rgba(255,179,0,0.15);
+  --gradient-brand: linear-gradient(135deg, #ffb300, #ff0080);
+
+  --agent-orchestrator: #00e5ff;
+  --agent-analyst: #6bcbff;
+  --agent-writer: #ff0080;
+  --agent-marketer: #ff6b35;
+  --agent-coder: #ffb300;
+
+  --status-active: #00e5ff;
+  --status-idle: #ffb300;
+  --status-dormant: #6b8fa3;
+  --status-success: #00e5ff;
+  --status-error: #ff0080;
+  --status-warning: #ffb300;
+
   --font-display: 'Inter Tight', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-size-xs: 10px;
@@ -52,10 +63,11 @@
   --blur-heavy: blur(16px);
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
-  --orb-violet: radial-gradient(ellipse at 20% 0%, rgba(139,92,246,0.15), transparent 60%);
-  --orb-cyan: radial-gradient(ellipse at 80% 40%, rgba(125,211,252,0.12), transparent 50%);
-  --grid-pattern: radial-gradient(circle, rgba(255,255,255,0.02) 1px, transparent 1px);
-  --grid-size: 24px;
+
+  --orb-violet: radial-gradient(ellipse at 20% 0%, rgba(255,179,0,0.08), transparent 60%);
+  --orb-cyan: radial-gradient(ellipse at 80% 40%, rgba(255,0,128,0.06), transparent 50%);
+  --grid-pattern: radial-gradient(circle, rgba(255,179,0,0.03) 1px, transparent 1px);
+  --grid-size: 32px;
 }
 
 /* Tab switching — only show active section */

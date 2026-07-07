@@ -186,7 +186,7 @@ function renderStatsStrip(container, data) {
   const successRate = totals.total ? ((totals.completed || 0) / totals.total * 100) : 0;
   container.innerHTML = `
     ${StatCard({ label: 'Integrity', value: fmtPct(successRate), accent: 'var(--status-active)', subtext: 'success rate', barWidth: successRate + '%' })}
-    ${StatCard({ label: 'Agent Calls', value: fmtNum(totals.total), accent: 'var(--brand-cyan)', barWidth: '100%' })}
+    ${StatCard({ label: 'Agent Calls', value: fmtNum(totals.total), accent: 'var(--brand-amber)', barWidth: '100%' })}
     ${StatCard({ label: 'Messages', value: fmtNum(sessions.message_count), accent: 'var(--agent-orchestrator)', barWidth: '100%' })}
     ${StatCard({ label: 'Tokens In', value: fmtNum(sessions.input_tokens), accent: 'var(--brand-gold)', barWidth: '100%' })}
     ${StatCard({ label: 'Cache Hits', value: fmtNum(sessions.cache_read_tokens), accent: 'var(--brand-pink)', barWidth: '100%' })}
@@ -207,7 +207,7 @@ function renderThroughput(container, activity) {
   const max = Math.max(...sparkData, 1);
   const step = w / (sparkData.length - 1);
   ctx.beginPath();
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--brand-cyan').trim() || '#7DD3FC';
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--brand-amber').trim() || '#7DD3FC';
   ctx.lineWidth = 2;
   sparkData.forEach((v, i) => {
     const x = i * step;
@@ -228,8 +228,8 @@ function renderThroughput(container, activity) {
   const ly = h - (last / max) * h;
   ctx.beginPath();
   ctx.arc(w - 2, ly, 4, 0, Math.PI * 2);
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--brand-cyan').trim() || '#7DD3FC';
-  ctx.shadowColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-cyan').trim() || '#7DD3FC';
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--brand-amber').trim() || '#7DD3FC';
+  ctx.shadowColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-amber').trim() || '#7DD3FC';
   ctx.shadowBlur = 10;
   ctx.fill();
   ctx.shadowBlur = 0;
@@ -245,6 +245,67 @@ function renderActivityFeed(container, activity) {
       <span class="num" style="font-size:var(--font-size-xs)">${(r.created_at || '').slice(11,16) || '—'}</span>
     </div>
   `).join('');
+}
+function renderActivityArea(canvas, activity) {
+  if (!canvas) return;
+  const entries = activity?.entries || [];
+  const days = 30;
+  const counts = new Array(days).fill(0);
+  const labels = [];
+  const now = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    labels.push((d.getMonth() + 1) + '-' + d.getDate());
+  }
+  entries.forEach(e => {
+    const t = new Date(e.created_at);
+    if (isNaN(t.getTime())) return;
+    const diff = Math.floor((now - t) / 86400000);
+    if (diff >= 0 && diff < days) counts[days - 1 - diff]++;
+  });
+  const data = counts;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.clientWidth * 2;
+  const h = canvas.height = canvas.clientHeight * 2;
+  ctx.clearRect(0,0,w,h);
+  const max = Math.max(...data, 1);
+  const pad = 12;
+  const step = data.length > 1 ? (w - pad*2) / (data.length - 1) : w;
+  ctx.strokeStyle = 'rgba(255,179,0,0.08)'; ctx.lineWidth = 1;
+  for (let i=0;i<=3;i++){ const y = pad + (h-pad*2)*i/3; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke(); }
+  ctx.beginPath();
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--brand-amber').trim() || '#ffb300';
+  ctx.lineWidth = 2;
+  data.forEach((v,i) => { const x = pad + i*step; const y = h - pad - (v/max)*(h-pad*2); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+  ctx.stroke();
+  ctx.lineTo(w-pad, h-pad); ctx.lineTo(pad, h-pad); ctx.closePath();
+  const grad = ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0, 'rgba(255,179,0,0.35)'); grad.addColorStop(1, 'rgba(255,179,0,0.02)');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.fillStyle = 'rgba(107,143,163,0.85)'; ctx.font = '10px JetBrains Mono, monospace';
+  labels.forEach((l,i) => { const x = pad + i*step; ctx.fillText(l, Math.min(Math.max(x-12,pad), w-30), h-2); });
+}
+function renderAgentDonut(canvas, activity) {
+  if (!canvas) return;
+  const ags = activity?.agents || [];
+  const items = ags.map(a => ({ name: a.name, total: Number(a.total)||0 })).filter(x=>x.total>0);
+  const total = items.reduce((s,x)=>s+x.total,0) || 1;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.clientWidth * 2;
+  const h = canvas.height = canvas.clientHeight * 2;
+  ctx.clearRect(0,0,w,h);
+  const cx = w/2, cy = h/2, R = Math.min(w,h)/2 - 12, r = R*0.58;
+  let ang = -Math.PI/2;
+  const colors = ['#ffb300','#00e5ff','#ff0080','#6bcbff','#ff6b35'];
+  items.forEach((it,i) => {
+    const slice = (it.total/total) * Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,ang,ang+slice); ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length]; ctx.fill();
+    ang += slice;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle = '#05080f'; ctx.fill();
+  ctx.fillStyle = '#e8f4ff'; ctx.font = '600 20px JetBrains Mono, monospace'; ctx.textAlign='center';
+  ctx.fillText(String(total), cx, cy-2); ctx.font='10px JetBrains Mono, monospace'; ctx.fillStyle='#6b8fa3'; ctx.fillText('CALLS', cx, cy+14); ctx.textAlign='left';
 }
 function renderOverview(data) {
   currentData = data;
@@ -266,6 +327,10 @@ function renderOverview(data) {
   renderStatsStrip(statsStrip, data);
   renderThroughput(throughContainer, data.activity);
   renderActivityFeed(activityFeed, data.activity);
+  const actArea = document.getElementById('activity-area-canvas');
+  const agentDonut = document.getElementById('agent-donut-canvas');
+  if (actArea) renderActivityArea(actArea, data.activity);
+  if (agentDonut) renderAgentDonut(agentDonut, data.activity);
 }
 
 // ---------- Agents ----------
@@ -714,6 +779,24 @@ function buildOverview() {
           children: `
             <div style="font: 400 var(--font-size-xs) var(--font-mono); color: var(--text-muted); letter-spacing: var(--letter-spacing-wide); text-transform: uppercase; margin-bottom: var(--space-2)">Activity</div>
             <div id="activity-feed"></div>
+          `
+        })}
+      </div>
+      <div class="bottom-grid">
+        ${GlassCard({
+          children: `
+            <div style="font: 400 var(--font-size-xs) var(--font-mono); color: var(--text-muted); letter-spacing: var(--letter-spacing-wide); text-transform: uppercase; margin-bottom: var(--space-2)">7-Day Activity</div>
+            <div style="height: 160px; position: relative;">
+              <canvas id="activity-area-canvas" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          `
+        })}
+        ${GlassCard({
+          children: `
+            <div style="font: 400 var(--font-size-xs) var(--font-mono); color: var(--text-muted); letter-spacing: var(--letter-spacing-wide); text-transform: uppercase; margin-bottom: var(--space-2)">Agent Share</div>
+            <div style="height: 160px; position: relative;">
+              <canvas id="agent-donut-canvas" style="width: 100%; height: 100%;"></canvas>
+            </div>
           `
         })}
       </div>
