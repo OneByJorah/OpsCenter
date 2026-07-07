@@ -1,6 +1,6 @@
 # INTENT.md — J1-PIPELINE Phase -1 (ORACLE)
 
-**Repository:** `OneByJorah/agent-mission-control`
+**Repository:** `OneByJorah/OpsCenter`
 **Analysis Date:** 2026-07-05
 **Analyst:** J1-PIPELINE ORACLE (read-only)
 **Status:** Intent Reconstructed
@@ -9,7 +9,7 @@
 
 ## What This System Does
 
-**Hermes Mission Control** is a real-time AI Agent Operations Dashboard — a web-based monitoring, task management, and observability interface for the Hermes AgentOS subagent fleet. It is the operational window into the J1-FLEET agent orchestration system.
+**OpsCenter** is a real-time AI Agent Operations Dashboard — a web-based monitoring, task management, and observability interface for the Hermes AgentOS subagent fleet. It is the operational window into the J1-FLEET agent orchestration system.
 
 ### Technical Role
 
@@ -69,7 +69,7 @@ Browser (HTML/JS + Three.js) ──SSE──▶ Python HTTP Server ──▶ boa
 
 Hermes AgentOS is a multi-agent orchestration system that spawns and manages subagents (orchestrator, analyst, writer, marketer, coder) across platforms (Telegram, Discord). These agents operate autonomously — routing tasks, researching domains, drafting content, writing code, and managing deployments. **There was no operational visibility into what the agent fleet was doing.**
 
-Without Mission Control, operators had to:
+Without OpsCenter, operators had to:
 - SSH into the server and query SQLite databases manually
 - Parse raw `gateway_state.json` to check agent status
 - Have no real-time view of task progress or agent health
@@ -91,12 +91,12 @@ The repo was built rapidly to fill this gap, with 9+ backup snapshots in the fir
 
 ### Ecosystem Fit
 
-`agent-mission-control` is the **observability layer** of the J1-FLEET / Hermes AgentOS ecosystem:
+`OpsCenter` is the **observability layer** of the J1-FLEET / Hermes AgentOS ecosystem:
 
 ```
 J1-FLEET (orchestration infrastructure)
     └── Hermes AgentOS (agent runtime, gateway, session management)
-            └── agent-mission-control (operations dashboard)
+            └── OpsCenter (operations dashboard)
                     ├── gateway_state.json — Gateway process state
                     ├── agent-logs.db — Agent execution logs
                     ├── state.db — Session & token usage
@@ -154,7 +154,7 @@ Evidence:
 ## Repository Structure
 
 ```
-agent-mission-control/
+OpsCenter/
 ├── server.py              # Python backend (661 lines) — HTTP + SSE + API + DB
 ├── app.js                 # Frontend application (1601 lines) — UI logic + 3D
 ├── components.js          # Reusable UI components (50 lines)
@@ -181,7 +181,7 @@ agent-mission-control/
 ├── SECURITY.md            # 90-day disclosure policy, report to j1admin@onebyjorah.com
 ├── LICENSE                # MIT, Copyright (c) 2026 Jhonattan L. Jimenez
 ├── .gitignore             # Standard Python/JS/IDE/OS ignores
-└── README.md              # Branded as "Hermes Mission Control"
+└── README.md              # Branded as "OpsCenter"
 ```
 
 ---
@@ -190,7 +190,7 @@ agent-mission-control/
 
 | Hash | Date | Message |
 |------|------|---------|
-| `5c77f83` | 2026-07-05 | audit(agent-mission-control): sanitize paths, emails, and gitignore |
+| `5c77f83` | 2026-07-05 | audit(OpsCenter): sanitize paths, emails, and gitignore |
 | `2f676a7` | 2026-07-05 | security: redact hardcoded Tailscale IP |
 | `ad3c460` | 2026-07-04 | Apply ruff auto-fixes and portfolio standardization |
 | `ff0ca78` | 2026-07-04 | docs: align README to J1 brand standard |

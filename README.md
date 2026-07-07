@@ -8,7 +8,7 @@
 <br>
 
 <div align="center">
-  <h1>🛸 Hermes Mission Control</h1>
+  <h1>🛸 OpsCenter</h1>
   <p><strong>AI Agent Operations Dashboard</strong></p>
   <p>Real-time monitoring, task management, and operational visibility for Hermes AgentOS subagents</p>
   <p>
@@ -33,8 +33,8 @@
 ## 🚀 Quick Start
 
 ```bash
-git clone https://github.com/OneByJorah/agent-mission-control.git
-cd agent-mission-control
+git clone https://github.com/OneByJorah/OpsCenter.git
+cd OpsCenter
 python3 server.py
 ```
 
@@ -61,7 +61,7 @@ Browser (HTML/JS) ──SSE──▶ Python Server ──▶ SQLite
 ## 📁 Project Structure
 
 ```
-agent-mission-control/
+OpsCenter/
 ├── server.py              # Python backend (WebSocket + API)
 ├── app.js                 # Frontend application logic
 ├── components.js          # Reusable UI components
@@ -103,6 +103,6 @@ MIT © Jhonattan L. Jimenez
 ---
 
 <div align="center">
-  <p>🛸 Mission control for your AI agent fleet</p>
+  <p>🛸 Operations center for your AI agent fleet</p>
   <p><a href="https://github.com/OneByJorah">@OneByJorah</a></p>
 </div>
