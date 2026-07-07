@@ -1,0 +1,42 @@
+version: "3.9"
+
+# ============================================================================
+# Agent Mission Control — Hermes Mission Control Dashboard
+# JorahOne
+#
+# Self-contained Python HTTP server with HTML/JS frontend.
+# Reads Hermes state from ~/.hermes/ on the host.
+# ============================================================================
+
+services:
+  mission-control:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jorahone/agent-mission-control:latest
+    container_name: agent-mission-control
+    ports:
+      - "${PORT:-51763}:${PORT:-51763}"
+    env_file:
+      - .env
+    environment:
+      - PORT=${PORT:-51763}
+      - BIND=${BIND:-0.0.0.0}
+      - MISSION_CONTROL_API_KEY=${MISSION_CONTROL_API_KEY:-}
+      - HERMES_HOME=${HERMES_HOME:-/hermes-home}
+      - MISSION_CONTROL_CONTENT_DIR=${MISSION_CONTROL_CONTENT_DIR:-/app/content}
+    volumes:
+      # Mount the host Hermes home for state/agent-logs access
+      - ${HERMES_HOME:-~/.hermes}:/hermes-home:ro
+      # Persistent board database
+      - board-data:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-51763}/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  board-data:

@@ -20,6 +20,11 @@
 
 ---
 
+## 📸 Screenshot
+
+![Agent Mission Control Dashboard](docs/screenshot.png)
+*Real-time AI agent operations dashboard with live monitoring, task board, and system health*
+
 ## ✨ Features
 
 - **Live Agent Monitoring** — Real-time visibility into Hermes subagent status and activity
