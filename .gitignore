@@ -20,3 +20,12 @@ build/
 *.so
 # Logs
 *.log
+
+# Databases (runtime data)
+*.db
+*.sqlite
+*.sqlite3
+
+# Captured test artifacts
+docs/test.txt
+test.html
