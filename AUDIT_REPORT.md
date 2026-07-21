@@ -33,7 +33,7 @@ The server binds to `0.0.0.0:51763` with **zero authentication**. Anyone who can
 ### C2 — Hardcoded absolute paths (Portability)
 **File:** `server.py`
 - `CONTENT_DIR = "/root/.hermes/content"` (line 283)
-- `HERMES_HOME = os.environ.get("HERMES_HOME", "/home/j1admin/.hermes")` (line 10)
+- `HERMES_HOME = os.environ.get("HERMES_HOME", os.path.join(PROJECT_DIR, "..", ".hermes"))` (line 13)
 
 Both paths are tied to a specific server setup. `/root/.hermes/content` has no environment variable override, making this completely non-portable.
 

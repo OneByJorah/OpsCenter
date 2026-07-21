@@ -1041,8 +1041,8 @@ let fleetPulses = [];
 const FLEET_CONFIG = {
   nodes: [
     { id: 'homelab', label: 'Homelab', site: 'St. Thomas', role: 'primary', x: -10, z: 6, color: 0xffb000 },
-    { id: 'vide-stt', label: 'VIDE STT', site: 'St. Thomas', role: 'district', x: 10, z: 6, color: 0x29e0c8 },
-    { id: 'vide-stx', label: 'VIDE STX', site: 'St. Croix', role: 'district', x: 0, z: 10, color: 0x29e0c8 }
+    { id: 'district-stt', label: 'District East', site: 'St. Thomas', role: 'district', x: 10, z: 6, color: 0x29e0c8 },
+    { id: 'district-stx', label: 'District West', site: 'St. Croix', role: 'district', x: 0, z: 10, color: 0x29e0c8 }
   ]
 };
 
