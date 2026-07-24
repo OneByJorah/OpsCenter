@@ -1,31 +1,24 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white">
-  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black">
-  <img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
-  <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white">
-</div>
 
-<br>
+![OpsCenter banner](docs/assets/banner.svg)
 
-<div align="center">
-  <h1>OpsCenter</h1>
-  <p><strong>AI Agent Operations Dashboard</strong></p>
-  <p>Real-time monitoring, task management, and operational visibility for AI agent fleets.</p>
-  <p>
-    <a href="#features">Features</a> •
-    <a href="#quick-start">Quick Start</a> •
-    <a href="#architecture">Architecture</a> •
-    <a href="#contributing">Contributing</a>
-  </p>
+# OpsCenter
+
+AI agent operations dashboard
+
+![License](https://img.shields.io/badge/license-MIT-brightgreen)
+![Language](https://img.shields.io/badge/language-Python-blue)
 </div>
 
 ---
 
-## Screenshot
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="OpsCenter preview" width="90%">
+</p>
 
-![Agent Operations Dashboard](docs/screenshot.png)
-*Real-time AI agent operations dashboard with live monitoring, task board, and system health.*
+<br>
+
+---
 
 ## Features
 
@@ -105,7 +98,6 @@ OpsCenter/
 ## Development
 
 ```bash
-# Install dependencies
 pip install -r requirements.txt
 
 # Run the server
@@ -137,7 +129,18 @@ MIT © Jhonattan L. Jimenez
 
 ---
 
-<div align="center">
-  <p>Operations control for your AI agent fleet.</p>
-  <p><a href="https://github.com/OneByJorah">@OneByJorah</a></p>
-</div>
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## 🔒 Security
+
+Found a vulnerability? Please follow our [Security Policy](SECURITY.md) and report privately to `security@jorahone.com`.
+
+## 📄 License
+
+[MIT License](LICENSE) © Jhonattan L. Jimenez (OneByJorah)
+
+---
+
+<p align="center">Built with 🌴 by <a href="https://github.com/OneByJorah">OneByJorah</a> · <a href="https://jorahone.com">jorahone.com</a></p>
