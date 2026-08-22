@@ -8,6 +8,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
+from urllib.parse import unquote
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 HERMES_HOME = os.environ.get("HERMES_HOME", os.path.join(PROJECT_DIR, "..", ".hermes"))
@@ -345,9 +346,12 @@ def cron_jobs():
 CONTENT_DIR = os.environ.get("MISSION_CONTROL_CONTENT_DIR", os.path.join(PROJECT_DIR, "content"))
 
 def _safe_content_path(raw):
-    p = os.path.normpath(os.path.join(CONTENT_DIR, raw or ""))
-    if not p.startswith(CONTENT_DIR):
+    root = os.path.realpath(CONTENT_DIR)
+    p = os.path.realpath(os.path.join(root, raw or ""))
+    if p != root and not p.startswith(root + os.sep):
         raise ValueError("path traversal rejected")
+    if not p.endswith(".md"):
+        raise ValueError("only .md files are supported")
     return p
 
 def list_content():
@@ -389,7 +393,10 @@ def list_content():
     return safe(_run)
 
 def get_content(raw_path):
-    p = _safe_content_path(raw_path)
+    try:
+        p = _safe_content_path(raw_path)
+    except ValueError as e:
+        return {"error": str(e)}
     def _run():
         with open(p, "r", encoding="utf-8") as f:
             return f.read()
@@ -398,7 +405,10 @@ def get_content(raw_path):
 def save_content(data):
     raw = data.get("path") or ""
     content = data.get("content") or ""
-    p = _safe_content_path(raw)
+    try:
+        p = _safe_content_path(raw)
+    except ValueError as e:
+        return {"error": str(e)}
     def _run():
         os.makedirs(os.path.dirname(p) or CONTENT_DIR, exist_ok=True)
         with open(p, "w", encoding="utf-8") as f:
@@ -579,12 +589,14 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             finally:
                 self.request.settimeout(None)
+        elif self.path == "/api/health":
+            self._send_json({"status": "ok", "t": datetime.now(timezone.utc).isoformat()})
         elif self.path == "/api/board":
             self._send_json(get_board())
         elif self.path == "/api/content":
             self._send_json(list_content())
         elif self.path.startswith("/api/content/get?path="):
-            file_path = self.path.split("=", 1)[1]
+            file_path = unquote(self.path.split("=", 1)[1])
             self._send_json(get_content(file_path))
         else:
             self.send_error(404)
@@ -612,14 +624,23 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(payload)
                 return
-        length = int(self.headers.get("Content-Length", 0))
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            length = 0
         body = self.rfile.read(length) if length else b""
-        data = json.loads(body) if body else {}
+        try:
+            data = json.loads(body) if body else {}
+            if not isinstance(data, dict):
+                raise ValueError("JSON object required")
+        except ValueError:
+            self._send_json({"error": "invalid JSON body"})
+            return
         if self.path.startswith("/api/board/update?id="):
-            task_id = self.path.split("=", 1)[1]
+            task_id = unquote(self.path.split("=", 1)[1])
             self._send_json(update_task(task_id, data))
         elif self.path.startswith("/api/board/delete?id="):
-            task_id = self.path.split("=", 1)[1]
+            task_id = unquote(self.path.split("=", 1)[1])
             self._send_json(delete_task(task_id))
         elif self.path == "/api/board":
             self._send_json(create_task(data))
@@ -665,6 +686,7 @@ class Handler(BaseHTTPRequestHandler):
 def run():
     init_board()
     socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.daemon_threads = True
     with socketserver.ThreadingTCPServer((BIND, PORT), Handler) as httpd:
         print(f"Serving http://{BIND}:{PORT}")
         httpd.serve_forever()

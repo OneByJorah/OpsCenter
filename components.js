@@ -8,7 +8,10 @@ export const GlassCard = ({ children, className = '', style = {} }) => `
   ">${children}</div>
 `;
 
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 export const Badge = ({ text, color = 'var(--text-muted)', variant = 'subtle' }) => {
+  text = esc(text);
   const bg = variant === 'solid' ? color : `${color}20`;
   return `<span class="badge" style="
     background: ${bg};
@@ -37,11 +40,14 @@ export const ProgressBar = ({ pct, color = 'var(--brand-cyan)', height = '6px' }
   </div>
 `;
 
-export const ThinBar = ({ pct, color }) => `
+export const ThinBar = ({ pct, color }) => {
+  const vals = Array.isArray(pct) ? pct : Array.from({ length: 7 }, () => Number(pct) || 0);
+  return `
   <div style="display: flex; gap: 2px; align-items: flex-end; height: 32px;">
-    ${pct.reverse().map((v, i) => `<div style="width: calc(100% / 7 - 2px); height: ${Math.max(2, v * 0.32)}px; background: ${color}; border-radius: var(--radius-sm); opacity: ${v > 0 ? 0.85 : 0.15};"></div>`).join('')}
+    ${[...vals].reverse().map((v, i) => `<div style="width: calc(100% / 7 - 2px); height: ${Math.max(2, v * 0.32)}px; background: ${color}; border-radius: var(--radius-sm); opacity: ${v > 0 ? 0.85 : 0.15};"></div>`).join('')}
   </div>
 `;
+};
 
 export const DonutChart = ({ slices, total }) => {
   if (total === 0) return '<canvas style="width:130px;height:130px"></canvas>';

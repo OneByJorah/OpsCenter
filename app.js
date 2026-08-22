@@ -129,7 +129,7 @@ function renderContext(container, activity) {
 }
 function renderVpsHealth(container, vps) {
   if (!container) return;
-  if (!vps || vps.error) { container.innerHTML = Badge({ text: v && v.error || 'unavailable', color: 'var(--status-error)' }); return; }
+  if (!vps || vps.error) { container.innerHTML = Badge({ text: (vps && vps.error) || 'unavailable', color: 'var(--status-error)' }); return; }
   const cpuColor = vps.cpu_percent > 85 ? 'var(--status-error)' : vps.cpu_percent > 70 ? 'var(--status-warning)' : 'var(--brand-cyan)';
   const memColor = vps.memory.percent > 85 ? 'var(--status-error)' : vps.memory.percent > 70 ? 'var(--status-warning)' : 'var(--brand-cyan)';
   const diskColor = vps.disk.percent > 85 ? 'var(--status-error)' : vps.disk.percent > 70 ? 'var(--status-warning)' : 'var(--brand-cyan)';
@@ -549,39 +549,37 @@ function columnHTML(status, tasks) {
     </div>
   `;
 }
+async function handleBoardClick(e) {
+  const btn = e.target.closest('button[data-act], button[data-add]');
+  if (!btn) return;
+  const addBtn = btn.closest('[data-add]');
+  if (addBtn) { openAddModal(); return; }
+  const act = btn.dataset.act;
+  const card = btn.closest('.task-card');
+  const id = card?.dataset.id;
+  const task = boardTasks.find(t => t.id === id);
+  if (!task) return;
+  if (act === 'delete') {
+    card.style.opacity = '0.4'; card.style.pointerEvents = 'none';
+    try { await deleteTaskApi(task.id); boardTasks = boardTasks.filter(t => t.id !== task.id); }
+    catch (err) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; }
+    finally { await refreshBoard(); renderBoard(); }
+    return;
+  }
+  if (act === 'forward' || act === 'back') {
+    const dir = act === 'forward' ? 1 : -1;
+    const next = moveStatus(task.status, dir);
+    if (!next) return;
+    card.style.opacity = '0.5';
+    try { await updateTaskStatus(task.id, next); task.status = next; }
+    catch (err) { card.style.opacity = '1'; }
+    finally { await refreshBoard(); renderBoard(); }
+  }
+}
 function buildTasks() {
-  const board = document.getElementById('board-root');
-  if (!board) return '';
-  board.addEventListener('click', async (e) => {
-    const btn = e.target.closest('button[data-act], button[data-add]');
-    if (!btn) return;
-    const addBtn = btn.closest('[data-add]');
-    if (addBtn) { openAddModal(); return; }
-    const act = btn.dataset.act;
-    const card = btn.closest('.task-card');
-    const id = card?.dataset.id;
-    const task = boardTasks.find(t => t.id === id);
-    if (!task) return;
-    if (act === 'delete') {
-      card.style.opacity = '0.4'; card.style.pointerEvents = 'none';
-      try { await deleteTaskApi(task.id); boardTasks = boardTasks.filter(t => t.id !== task.id); }
-      catch (err) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; }
-      finally { await refreshBoard(); renderBoard(); }
-      return;
-    }
-    if (act === 'forward' || act === 'back') {
-      const dir = act === 'forward' ? 1 : -1;
-      const next = moveStatus(task.status, dir);
-      if (!next) return;
-      card.style.opacity = '0.5';
-      try { await updateTaskStatus(task.id, next); task.status = next; }
-      catch (err) { card.style.opacity = '1'; }
-      finally { await refreshBoard(); renderBoard(); }
-    }
-  });
   return `
     <div class="board" id="board-root">
-      ${STATUS_FLOW.map(s => columnHTML(s, boardTasks.filter(t => (t.status || 'pending') === s))).join('')}
+      ${STATUS_FLOW.map(s => columnHTML(s, [])).join('')}
     </div>
     <div id="modal-root"></div>
   `;
@@ -590,6 +588,10 @@ function renderTasksTab(data) {
   currentData = data;
   const boardRoot = document.getElementById('board-root');
   if (!boardRoot) return;
+  if (!boardRoot.dataset.bound) {
+    boardRoot.dataset.bound = '1';
+    boardRoot.addEventListener('click', handleBoardClick);
+  }
   const pending = boardTasks.filter(t => (t.status || 'pending') === 'pending');
   const inProg = boardTasks.filter(t => (t.status || 'pending') === 'in_progress');
   const done = boardTasks.filter(t => (t.status || 'pending') === 'completed');
@@ -653,8 +655,10 @@ function buildShell() {
       panels.forEach(p => p.classList.remove('active'));
       document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
       if (btn.dataset.tab === 'tasks') renderBoard();
+      if (btn.dataset.tab === 'agents') renderAgentsTab(currentData);
+      if (btn.dataset.tab === 'schedule') renderScheduleTab(currentData);
       if (btn.dataset.tab === 'content') renderContentTab();
-      if (btn.dataset.tab === 'office') renderOfficeTab();
+      if (btn.dataset.tab === 'office') renderOfficeTab(currentData);
     });
   });
   const clockEl = nav.querySelector('.clock');
@@ -951,8 +955,8 @@ async function renderContentView(panel, doc) {
   try {
     const res = await fetchContentFile(doc.path);
     const md = res.content || res.text || '';
-    if (typeof marked !== 'undefined') {
-      html = marked.parse(md);
+    if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+      html = DOMPurify.sanitize(marked.parse(md));
     } else {
       html = '<pre>' + esc(md) + '</pre>';
     }
@@ -1027,7 +1031,7 @@ let officeRenderer = null;
 let officeAgents = [];
 let officeAnimId = null;
 let raycaster = null;
-let mouse = new THREE.Vector2();
+let mouse = { x: 0, y: 0 };
 let selectedOfficeAgent = null;
 let cameraAngle = Math.PI / 4;
 let cameraHeight = 12;

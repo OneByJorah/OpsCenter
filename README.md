@@ -13,7 +13,7 @@ AI agent operations dashboard
 ---
 
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="OpsCenter preview" width="90%">
+  <img src="docs/screenshots/dashboard.png" alt="OpsCenter preview" width="90%">
 </p>
 
 <br>
@@ -27,21 +27,21 @@ AI agent operations dashboard
 - **Session Tracking** — Historical log of agent sessions and outcomes.
 - **Token Analytics** — Usage tracking and cost monitoring for LLM calls.
 - **System Health** — Server resource monitoring and alerting.
-- **WebSocket Updates** — Live streaming of agent state changes.
+- **Server-Sent Events** — Live streaming of agent state changes.
 - **Dark-Themed UI** — Professional, easy-on-the-eyes operations interface.
 - **Fleet Visualization** — 3D topology view of distributed agent nodes.
 
 ## Quick Start
 
+OpsCenter is a single self-contained Python app — standard library only, no pip dependencies.
+
 ```bash
 git clone https://github.com/OneByJorah/OpsCenter.git
 cd OpsCenter
-cp .env.example .env
-pip install -r requirements.txt
 python3 server.py
 ```
 
-Open **http://localhost:8080** in your browser.
+Open **http://localhost:51763** in your browser.
 
 ### Using the Start Script
 
@@ -54,16 +54,16 @@ chmod +x start.sh
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `8080` | Dashboard server port |
+| `PORT` | `51763` | Dashboard server port |
 | `BIND` | `127.0.0.1` | Server bind address |
 | `HERMES_HOME` | `../.hermes` | Path to the Hermes agent home directory |
-| `MISSION_CONTROL_API_KEY` | *(empty)* | API key for protecting dashboard endpoints |
-| `CONTENT_DIR` | `../.hermes/content` | Content directory for the editor |
+| `MISSION_CONTROL_API_KEY` | *(empty)* | API key protecting write endpoints (task board, content editor) via the `X-API-Key` header |
+| `MISSION_CONTROL_CONTENT_DIR` | `./content` | Markdown content directory for the editor |
 
 ## Architecture
 
 ```
-Browser (HTML/JS) ──WebSocket──▶ Python Server ──▶ SQLite
+Browser (HTML/JS) ──SSE / REST──▶ Python Server ──▶ SQLite
                                       │
                                       ▼
                               Agent Gateway API
@@ -80,7 +80,7 @@ OpsCenter/
 ├── tokens.css             # Token-themed styling
 ├── test.html              # UI test page
 ├── board.db               # SQLite database (auto-created)
-├── backups/               # Data backup directory
+├── backups/               # Historical source snapshots
 ├── start.sh               # Quick-start script
 └── server.log             # Runtime logs
 ```
@@ -90,20 +90,22 @@ OpsCenter/
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | Main dashboard UI |
-| `/api/agents` | GET | List active agents |
-| `/api/tasks` | GET/POST | Task management |
-| `/api/sessions` | GET | Session history |
-| `/api/health` | GET | System health status |
+| `/api/snapshot` | GET | Full dashboard snapshot (agents, sessions, health, cron, board) |
+| `/events` | GET (SSE) | Live snapshot stream |
+| `/api/health` | GET | Liveness probe |
+| `/api/board` | GET/POST | List / create tasks |
+| `/api/board/update?id=` | POST | Update a task |
+| `/api/board/delete?id=` | POST | Delete a task |
+| `/api/content` | GET | List markdown content files |
+| `/api/content/get?path=` | GET | Read a markdown file |
+| `/api/content/save` | POST | Save a markdown file |
 
 ## Development
 
 ```bash
-pip install -r requirements.txt
-
-# Run the server
 python3 server.py
 
-# Run the UI test page
+# Serve the repo statically (UI test page, no API)
 python3 -m http.server 8081
 ```
 
@@ -112,6 +114,7 @@ python3 -m http.server 8081
 OpsCenter ships with a Dockerfile and docker-compose configuration for self-hosting.
 
 ```bash
+cp .env.example .env
 docker compose up -d
 ```
 
@@ -121,23 +124,9 @@ Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ## Security
 
-For security concerns, see [SECURITY.md](SECURITY.md). Please report vulnerabilities to **info@jorahone.com** — do not use public issues.
-
-## License
-
-MIT © Jhonattan L. Jimenez
-
----
-
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions follow the [Code of Conduct](CODE_OF_CONDUCT.md).
-
-## 🔒 Security
-
 Found a vulnerability? Please follow our [Security Policy](SECURITY.md) and report privately to `security@jorahone.com`.
 
-## 📄 License
+## License
 
 [MIT License](LICENSE) © Jhonattan L. Jimenez (OneByJorah)
 
