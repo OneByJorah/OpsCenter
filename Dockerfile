@@ -5,7 +5,7 @@
 # Self-contained Python HTTP server with HTML/JS frontend.
 # Uses only Python stdlib — no pip dependencies required.
 # =============================================================================
-FROM python:3.11-alpine
+FROM python:3.14-alpine
 
 WORKDIR /app
 
