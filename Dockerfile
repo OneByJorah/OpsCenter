@@ -22,7 +22,7 @@ RUN mkdir -p content
 
 EXPOSE 51763
 
-ENV PORT=51763 BIND=0.0.0.0
+ENV PORT=51763 BIND=<ip-address>
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-51763}/api/health', timeout=5)" || exit 1

@@ -21,7 +21,7 @@ services:
       - .env
     environment:
       - PORT=${PORT:-51763}
-      - BIND=${BIND:-0.0.0.0}
+      - BIND=${BIND:-<ip-address>}
       - MISSION_CONTROL_API_KEY=${MISSION_CONTROL_API_KEY:-}
       - HERMES_HOME=${HERMES_HOME:-/hermes-home}
       - MISSION_CONTROL_CONTENT_DIR=${MISSION_CONTROL_CONTENT_DIR:-/app/content}
