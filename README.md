@@ -4,36 +4,26 @@
 
 # OpsCenter
 
-AI agent operations dashboard
+**A single-file, dependency-free operations dashboard for AI agent fleets — live agent state, a task board, session history, and system health in one dark-themed UI.**
 
-![License](https://img.shields.io/badge/license-MIT-brightgreen)
-![Language](https://img.shields.io/badge/language-Python-blue)
+<a href="https://github.com/OneByJorah/OpsCenter/stargazers"><img src="https://img.shields.io/github/stars/OneByJorah/OpsCenter?style=flat-square" alt="Stars"></a>
+<a href="https://github.com/OneByJorah/OpsCenter/commits"><img src="https://img.shields.io/github/last-commit/OneByJorah/OpsCenter?style=flat-square" alt="Last commit"></a>
+<img src="https://img.shields.io/github/license/OneByJorah/OpsCenter?style=flat-square" alt="License">
+<img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11+">
+<img src="https://img.shields.io/badge/Dependencies-none-success?style=flat-square" alt="No dependencies">
+<img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker Compose">
+
 </div>
 
----
+![OpsCenter dashboard](docs/assets/screenshot.png)
 
-<p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="OpsCenter preview" width="90%">
-</p>
+## What This Is
 
-<br>
+OpsCenter gives you visibility into what your AI agents are doing right now. It reads the Hermes agent state directory (`gateway_state.json`, `state.db`, `agent-logs.db`, `kanban.db`) and renders agents, sessions, health, cron jobs, and a task board in a single real-time view.
 
----
-
-## Features
-
-- **Live Agent Monitoring** — Real-time visibility into subagent status and activity.
-- **Task Board** — Kanban-style task management for agent operations.
-- **Session Tracking** — Historical log of agent sessions and outcomes.
-- **Token Analytics** — Usage tracking and cost monitoring for LLM calls.
-- **System Health** — Server resource monitoring and alerting.
-- **Server-Sent Events** — Live streaming of agent state changes.
-- **Dark-Themed UI** — Professional, easy-on-the-eyes operations interface.
-- **Fleet Visualization** — 3D topology view of distributed agent nodes.
+It is deliberately minimal: one Python file using only the standard library, serving a vanilla HTML/JS frontend. There are no pip dependencies to install and no build step.
 
 ## Quick Start
-
-OpsCenter is a single self-contained Python app — standard library only, no pip dependencies.
 
 ```bash
 git clone https://github.com/OneByJorah/OpsCenter.git
@@ -41,56 +31,55 @@ cd OpsCenter
 python3 server.py
 ```
 
-Open **http://localhost:51763** in your browser.
-
-### Using the Start Script
+Open **http://localhost:51763**. Or, for Docker:
 
 ```bash
-chmod +x start.sh
-./start.sh
+cp .env.example .env
+docker compose up -d
 ```
 
-## Environment Variables
+> [!NOTE]
+> OpsCenter reads agent state from `HERMES_HOME` (defaults to `../.hermes`). If that directory is absent the dashboard still starts and reports empty state.
+
+## Features
+
+- **Live agent monitoring** — current subagent status and activity pulled from Hermes state.
+- **Kanban task board** — create, update, and delete tasks persisted in `board.db`.
+- **Session tracking** — historical log of agent sessions and outcomes.
+- **Token analytics** — LLM usage and cost visibility from gateway state.
+- **System health** — server resource monitoring and threshold alerts.
+- **Server-Sent Events** — `/events` streams snapshot changes to the UI in real time.
+- **Content editor** — list, read, and save markdown files under the content directory.
+- **Fleet visualization** — 3D topology view of distributed agent nodes.
+
+## Architecture
+
+```
+Browser (HTML/JS) ──SSE / REST──▶ Python stdlib server ──▶ SQLite (board.db)
+                                        │
+                                        ▼
+                              Hermes state (gateway_state.json, *.db)
+```
+
+## Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `51763` | Dashboard server port |
 | `BIND` | `127.0.0.1` | Server bind address |
 | `HERMES_HOME` | `../.hermes` | Path to the Hermes agent home directory |
-| `MISSION_CONTROL_API_KEY` | *(empty)* | API key protecting write endpoints (task board, content editor) via the `X-API-Key` header |
+| `MISSION_CONTROL_API_KEY` | *(empty)* | API key protecting write endpoints (`X-API-Key` header) |
 | `MISSION_CONTROL_CONTENT_DIR` | `./content` | Markdown content directory for the editor |
 
-## Architecture
-
-```
-Browser (HTML/JS) ──SSE / REST──▶ Python Server ──▶ SQLite
-                                      │
-                                      ▼
-                              Agent Gateway API
-```
-
-## Project Structure
-
-```
-OpsCenter/
-├── server.py              # Python backend (WebSocket + API)
-├── app.js                 # Frontend application logic
-├── components.js          # Reusable UI components
-├── index.html             # Main dashboard page
-├── tokens.css             # Token-themed styling
-├── test.html              # UI test page
-├── board.db               # SQLite database (auto-created)
-├── backups/               # Historical source snapshots
-├── start.sh               # Quick-start script
-└── server.log             # Runtime logs
-```
+> [!WARNING]
+> Set `MISSION_CONTROL_API_KEY` to protect the board and content write endpoints before exposing OpsCenter on a network. Keep `BIND` at `127.0.0.1` unless you intend remote access.
 
 ## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | Main dashboard UI |
-| `/api/snapshot` | GET | Full dashboard snapshot (agents, sessions, health, cron, board) |
+| `/api/snapshot` | GET | Full snapshot (agents, sessions, health, cron, board) |
 | `/events` | GET (SSE) | Live snapshot stream |
 | `/api/health` | GET | Liveness probe |
 | `/api/board` | GET/POST | List / create tasks |
@@ -100,36 +89,34 @@ OpsCenter/
 | `/api/content/get?path=` | GET | Read a markdown file |
 | `/api/content/save` | POST | Save a markdown file |
 
-## Development
+## Use Cases
 
-```bash
-python3 server.py
+1. **Agent operators** — watch subagent activity and intervene from the task board.
+2. **Homelab AI stacks** — pair with Hermes to track sessions and token usage.
+3. **Ops on a budget** — run a zero-dependency dashboard in an Alpine container.
 
-# Serve the repo statically (UI test page, no API)
-python3 -m http.server 8081
-```
+## Tech Stack
 
-## Deployment
+Python 3.11 (standard library), `http.server`/`socketserver`, SQLite, SSE, vanilla HTML/CSS/JS, Docker Compose.
 
-OpsCenter ships with a Dockerfile and docker-compose configuration for self-hosting.
+## Screenshots
 
-```bash
-cp .env.example .env
-docker compose up -d
-```
+| Dashboard | Agents | Tasks |
+|---|---|---|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Agents](docs/screenshots/agents.png) | ![Tasks](docs/screenshots/tasks.png) |
+
+A short `docs/assets/demo.gif` walkthrough is also included.
 
 ## Contributing
 
-Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards.
-
-## Security
-
-Found a vulnerability? Please follow our [Security Policy](SECURITY.md) and report privately to `security@jorahone.com`.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). [Open an issue](https://github.com/OneByJorah/OpsCenter/issues) to report a bug or request a feature.
 
 ## License
 
-[MIT License](LICENSE) © Jhonattan L. Jimenez (OneByJorah)
+MIT — see [LICENSE](LICENSE).
 
----
+## Connect
 
-<p align="center">Built with 🌴 by <a href="https://github.com/OneByJorah">OneByJorah</a> · <a href="https://jorahone.com">jorahone.com</a></p>
+- [jorahone.com](https://jorahone.com)
+- [GitHub Org](https://github.com/OneByJorah)
+- [info@jorahone.com](mailto:info@jorahone.com)
